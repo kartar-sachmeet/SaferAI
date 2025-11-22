@@ -1,0 +1,78 @@
+# Diff-SAE Configuration for Gemma 2 Models
+
+# Model Configuration
+models:
+  base:
+    name: "google/gemma-2-2b"
+    device: "cuda"  # or "cpu" if no GPU
+    dtype: "bfloat16"  # or "float32" for CPU
+
+  instruct:
+    name: "google/gemma-2-2b-it"
+    device: "cuda"
+    dtype: "bfloat16"
+
+  # Target layer for SAE training (13 out of 26 layers)
+  target_layer: 13
+  total_layers: 26
+
+# SAE Architecture Configuration
+sae:
+  architecture: "BatchTopK"
+  n_latents: 18432  # ~18k latents as in the paper
+  d_model: 2304  # Gemma 2 2B hidden dimension
+  k: 64  # Number of active latents in BatchTopK
+
+  # Training hyperparameters
+  batch_size: 32
+  learning_rate: 3e-4
+  num_epochs: 10
+  l1_coefficient: 0.0  # BatchTopK uses TopK instead of L1
+  warmup_steps: 1000
+
+  # Checkpointing
+  save_every: 1000
+  checkpoint_dir: "./checkpoints"
+
+# Data Configuration
+data:
+  # Prompts for activation collection
+  dataset_name: "HuggingFaceH4/ultrachat_200k"  # or custom dataset
+  num_samples: 100000  # Number of prompts to collect activations from
+  max_seq_length: 512
+
+  # Activation caching
+  cache_dir: "./data/activations"
+  batch_size: 16
+
+  # Jailbreak prompts
+  jailbreak_dataset: "./data/prompts/jailbreak_prompts.json"
+
+# KL Dashboard Configuration
+dashboard:
+  port: 8501
+  host: "localhost"
+  max_tokens_display: 50
+  top_k_features: 20  # Show top-k features by KL attribution
+
+# Analysis Configuration
+analysis:
+  # Feature identification
+  top_activating_examples: 10
+  steering_coefficients: [0.5, 1.0, 2.0, 5.0]
+
+  # Jailbreak detection
+  jailbreak_threshold: 0.8  # Activation threshold for jailbreak features
+
+# Logging and Monitoring
+logging:
+  use_wandb: true
+  wandb_project: "diff-sae-gemma2"
+  wandb_entity: null  # Set your wandb username
+  log_every: 100
+
+# Computational Resources
+compute:
+  mixed_precision: true
+  gradient_accumulation_steps: 4
+  num_workers: 4
